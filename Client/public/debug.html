@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>地图排障测试</title>
+<style>*{margin:0;padding:0}html,body,#map{width:100%;height:100%}
+#log{position:absolute;top:10px;left:10px;width:400px;background:rgba(0,0,0,0.8);color:#0f0;padding:10px;border-radius:6px;font:12px monospace;z-index:999;max-height:300px;overflow-y:auto}
+</style></head>
+<body>
+<div id="map"></div>
+<div id="log"></div>
+<script src="https://webapi.amap.com/maps?v=2.0&key=2ac915e4e5f3c3e1af88bcb7b48fe54c&plugin=AMap.Scale,AMap.MarkerClusterer"></script>
+<script>
+const log = document.getElementById('log')
+function L(msg) { log.innerHTML += msg + '<br>' }
+
+L('1. 脚本标签已插入')
+
+window.onload = function() {
+  L('2. window.onload 触发')
+  L('3. typeof AMap=' + typeof AMap)
+  if (typeof AMap === 'undefined') {
+    L('ERROR: AMap 未定义! Key可能无效或脚本被拦截')
+    return
+  }
+  L('4. 创建地图...')
+  const map = new AMap.Map('map', { center: [116.397428, 39.90923], zoom: 10 })
+  L('5. 地图对象已创建')
+
+  L('6. 添加硬编码标记 (北京故宫)...')
+  const m = new AMap.Marker({ position: [116.397026, 39.908718], title: '故宫' })
+  map.add(m)
+  L('7. 单个标记已添加: ' + (m ? 'YES' : 'NO'))
+
+  L('8. 尝试调用 fetch API...')
+  fetch('http://localhost:8000/api/v1/pois?page_size=20')
+    .then(r => r.json())
+    .then(res => {
+      L('9. API响应: total=' + res.data.total + ', items=' + res.data.items.length)
+      const markers = res.data.items.map(p => new AMap.Marker({ position: [p.longitude, p.latitude], title: p.name }))
+      const cluster = new AMap.MarkerClusterer(map, markers, {
+        gridSize: 80, maxZoom: 16,
+        styles: [{ url: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png', size: new AMap.Size(36,36), textColor:'#fff', textSize:13 }]
+      })
+      L('10. 聚类已创建, 共' + markers.length + '个标记')
+      map.setFitView(null, false, [40,40,40,40])
+      L('11. fitView 已调用')
+    })
+    .catch(e => { L('API ERROR: ' + e.message) })
+}
+</script>
+</body>
+</html>

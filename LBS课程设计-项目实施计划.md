@@ -75,7 +75,7 @@
 ├────────────────┬───────────────────┬────────────────────────────────┤
 │ Web 框架        │ FastAPI 0.111+     │ 自动OpenAPI文档、异步、类型校验  │
 │ ASGI 服务器     │ Uvicorn 0.30+      │ 高性能异步服务器                 │
-│ 数据库          │ SQLite + SpatiaLite│ 零配置、单文件、空间索引支持      │
+│ 数据库          │ MySQL              │  零配置、单文件、空间索引支持      │
 │ 认证            │ python-jose (JWT)  │ 无状态认证，C/S友好             │
 │ 限流            │ slowapi            │ IP/用户级别限流                 │
 │ 空间计算        │ Shapely + GeoPy    │ 空间判断、距离计算、地理编码      │
@@ -110,7 +110,7 @@
 
 **结论**：FastAPI 的自动 OpenAPI 文档生成对课程答辩演示极为有利（可直接用 Swagger UI 展示所有 API），且 Pydantic 模型自动进行数据校验，大幅减少手工验证代码量。
 
-#### 2.2.2 数据库：SQLite + SpatiaLite vs PostgreSQL + PostGIS
+#### 2.2.2 数据库：SQLite + SpatiaLite vs PostgreSQL + PostGIS(最终仍然决定使用MySQL,方便部署)
 
 | 维度 | SQLite + SpatiaLite | PostgreSQL + PostGIS |
 |------|---------------------|----------------------|

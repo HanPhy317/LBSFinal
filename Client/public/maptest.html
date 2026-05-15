@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>地图测试</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #map { width: 100%; height: 100%; }
+    #info { position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,0.7);color:#0f0;padding:4px 10px;border-radius:4px;font:12px monospace;z-index:999; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="info">加载中...</div>
+  <script src="https://webapi.amap.com/maps?v=2.0&key=2ac915e4e5f3c3e1af88bcb7b48fe54c&plugin=AMap.Scale,AMap.MarkerClusterer"></script>
+  <script>
+    const info = document.getElementById('info')
+    info.textContent = 'AMap 脚本已加载'
+
+    const map = new AMap.Map('map', {
+      center: [116.397428, 39.90923],
+      zoom: 5,
+    })
+    map.addControl(new AMap.Scale())
+    info.textContent = '地图已创建，正在请求API...'
+
+    fetch('http://localhost:8000/api/v1/pois?page=1&page_size=50')
+      .then(r => r.json())
+      .then(res => {
+        info.textContent = 'API响应OK: total=' + res.data.total + ', items=' + res.data.items.length
+        const items = res.data.items
+        const markers = items.map(poi => {
+          const m = new AMap.Marker({
+            position: [poi.longitude, poi.latitude],
+            title: poi.name,
+          })
+          m.on('click', () => {
+            const content = `<div style="padding:8px"><b>${poi.name}</b><br>${poi.category||''} ${poi.batch||''}<br>${poi.address||''}</div>`
+            const iw = new AMap.InfoWindow({ content, offset: new AMap.Pixel(0,-30) })
+            iw.open(map, m.getPosition())
+          })
+          return m
+        })
+
+        const cluster = new AMap.MarkerClusterer(map, markers, { gridSize: 80, maxZoom: 16 })
+        info.textContent = 'OK: ' + markers.length + ' markers + cluster | total DB: ' + res.data.total
+        
+        map.setFitView(null, false, [40,40,40,40])
+      })
+      .catch(err => {
+        info.textContent = '❌ API请求失败: ' + err.message
+      })
+  </script>
+</body>
+</html>
