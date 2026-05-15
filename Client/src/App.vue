@@ -14,47 +14,6 @@
     <div class="app-body">
       <aside class="app-sidebar">
         <div class="sidebar-section">
-          <h3>筛选条件</h3>
-          <el-input
-            v-model="searchText"
-            placeholder="搜索文保单位名称..."
-            prefix-icon="Search"
-            clearable
-            size="default"
-          />
-          <el-select v-model="selectedCategory" placeholder="选择类别" clearable size="default">
-            <el-option label="古建筑" value="古建筑" />
-            <el-option label="古遗址" value="古遗址" />
-            <el-option label="古墓葬" value="古墓葬" />
-            <el-option label="石窟寺及石刻" value="石窟寺及石刻" />
-            <el-option label="近现代重要史迹及代表性建筑" value="近现代重要史迹及代表性建筑" />
-            <el-option label="其他" value="其他" />
-          </el-select>
-          <el-select v-model="selectedBatch" placeholder="选择批次" clearable size="default">
-            <el-option label="第一批" value="第一批" />
-            <el-option label="第二批" value="第二批" />
-            <el-option label="第三批" value="第三批" />
-            <el-option label="第四批" value="第四批" />
-            <el-option label="第五批" value="第五批" />
-            <el-option label="第六批" value="第六批" />
-            <el-option label="第七批" value="第七批" />
-          </el-select>
-          <el-button type="primary" @click="handleSearch" style="width: 100%">
-            查询
-          </el-button>
-        </div>
-
-        <div class="sidebar-section">
-          <h3>空间搜索</h3>
-          <el-button @click="handleRectSearch" :type="rectMode ? 'warning' : 'default'" style="width: 100%; margin-bottom: 8px">
-            {{ rectMode ? '点击地图选框选范围' : '矩形框选' }}
-          </el-button>
-          <el-button @click="handleRadiusSearch" :type="radiusMode ? 'warning' : 'default'" style="width: 100%">
-            {{ radiusMode ? '点击地图选中心点' : '中心半径搜索' }}
-          </el-button>
-        </div>
-
-        <div class="sidebar-section">
           <h3>图例</h3>
           <div class="legend-item" v-for="item in legendItems" :key="item.label">
             <span class="legend-dot" :style="{ background: item.color }"></span>
@@ -105,11 +64,6 @@ import { Loading, Aim } from '@element-plus/icons-vue'
 import { useAmap } from './composables/useAmap'
 import apiClient from './api/index.js'
 
-const searchText = ref('')
-const selectedCategory = ref('')
-const selectedBatch = ref('')
-const rectMode = ref(false)
-const radiusMode = ref(false)
 const mapCenter = ref([104.066, 35.576])
 const mapZoom = ref(4)
 const loadingData = ref(false)
@@ -128,7 +82,7 @@ const legendItems = [
 const mapContainer = ref(null)
 const mapLoading = ref(true)
 const mapError = ref('')
-const { isReady, loadScript, initMap, renderPois, clearMarkers, destroyMap, getMap } = useAmap()
+const { loadScript, initMap, renderPois, clearMarkers, destroyMap, getMap } = useAmap()
 
 let mapInstance = null
 
@@ -157,15 +111,15 @@ onMounted(async () => {
 
 async function loadAllPois() {
   loadingData.value = true
+  dataError.value = ''
   try {
     const res = await apiClient.get('/pois', { params: { page_size: 3000, page: 1 } })
     const data = res.data
     totalPoiCount.value = data.total
-    const count = renderPois(data.items)
-    displayedPoiCount.value = count
+    displayedPoiCount.value = renderPois(data.items)
   } catch (err) {
-    console.warn('POI数据加载失败（后端未启动）:', err.message)
-    dataError.value = '后端服务未启动，请先运行 python run.py 启动 Server'
+    console.warn('POI数据加载失败:', err.message)
+    dataError.value = '后端服务未启动，请先运行 python run.py'
   } finally {
     loadingData.value = false
   }
@@ -174,38 +128,6 @@ async function loadAllPois() {
 onUnmounted(() => {
   destroyMap()
 })
-
-async function handleSearch() {
-  loadingData.value = true
-  try {
-    const params = {
-      page_size: 3000,
-      page: 1,
-    }
-    if (searchText.value) params.name = searchText.value
-    if (selectedCategory.value) params.category = selectedCategory.value
-    if (selectedBatch.value) params.batch = selectedBatch.value
-    const res = await apiClient.get('/pois', { params })
-    const data = res.data
-    totalPoiCount.value = data.total
-    const count = renderPois(data.items)
-    displayedPoiCount.value = count
-  } catch (err) {
-    console.error('搜索失败:', err)
-  } finally {
-    loadingData.value = false
-  }
-}
-
-function handleRectSearch() {
-  rectMode.value = !rectMode.value
-  radiusMode.value = false
-}
-
-function handleRadiusSearch() {
-  radiusMode.value = !radiusMode.value
-  rectMode.value = false
-}
 
 function handleLocate() {
   const map = getMap()
@@ -267,7 +189,7 @@ function handleLocate() {
 }
 
 .app-sidebar {
-  width: 300px;
+  width: 125px;
   background: #f8f9fa;
   border-right: 1px solid #e8e8e8;
   overflow-y: auto;
@@ -275,30 +197,24 @@ function handleLocate() {
 }
 
 .sidebar-section {
-  padding: 16px;
+  padding: 14px;
   border-bottom: 1px solid #e8e8e8;
 }
 
 .sidebar-section h3 {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #333;
-  margin-bottom: 12px;
-}
-
-.sidebar-section .el-input,
-.sidebar-section .el-select {
   margin-bottom: 10px;
-  width: 100%;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 12px;
   color: #555;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .legend-dot {
@@ -306,6 +222,8 @@ function handleLocate() {
   height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .app-main {

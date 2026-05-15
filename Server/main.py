@@ -1,6 +1,8 @@
 import math
+from urllib.request import urlopen, Request
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pymysql.cursors import DictCursor
 from testdb import get_connection
 
@@ -89,7 +91,28 @@ def list_pois(
             "latitude": r["latitude"],
             "bd_longitude": r["bd_longitude"],
             "bd_latitude": r["bd_latitude"],
+            "media": [],
         })
+
+    if items:
+        poi_ids = [it["id"] for it in items]
+        placeholders = ",".join(["%s"] * len(poi_ids))
+        cursor.execute(
+            f"SELECT poi_id, media_type, media_url, title, description "
+            f"FROM poi_media WHERE poi_id IN ({placeholders}) ORDER BY poi_id, sort_order",
+            poi_ids,
+        )
+        media_rows = cursor.fetchall()
+        media_map = {}
+        for m in media_rows:
+            media_map.setdefault(m["poi_id"], []).append({
+                "media_type": m["media_type"],
+                "media_url": m["media_url"],
+                "title": m["title"],
+                "description": m["description"],
+            })
+        for it in items:
+            it["media"] = media_map.get(it["id"], [])
 
     cursor.close()
     conn.close()
@@ -139,3 +162,15 @@ def stats_overview():
 @app.get("/api/v1/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/v1/proxy/image")
+def proxy_image(url: str = Query(..., description="远程图片URL")):
+    try:
+        req = Request(url, headers={"User-Agent": "Mozilla/5.0", "Referer": "https://baike.baidu.com/"})
+        with urlopen(req, timeout=10) as resp:
+            content = resp.read()
+            content_type = resp.headers.get("Content-Type", "image/jpeg")
+            return Response(content=content, media_type=content_type)
+    except Exception as e:
+        return Response(status_code=404, content=str(e))
